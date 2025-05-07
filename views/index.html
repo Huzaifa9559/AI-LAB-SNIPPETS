@@ -899,5 +899,113 @@ df = pd.get_dummies(df, columns=["embarked"], drop_first=True)
 print(df.head())
 </code></pre>
 
+<h2>📉 ROC Curve</h2>
+<pre><code>
+from sklearn.metrics import roc_curve, auc
+import matplotlib.pyplot as plt
+
+# After you get y_test and y_pred, also get the predicted probabilities
+y_probs = model.predict_proba(X_test)[:, 1]  # Probability for class 1
+
+# Compute FPR, TPR, thresholds
+fpr, tpr, thresholds = roc_curve(y_test, y_probs)
+
+# Compute AUC
+roc_auc = auc(fpr, tpr)
+
+# Plot ROC Curve
+plt.figure()
+plt.plot(fpr, tpr, color="blue", label=f"ROC curve (AUC = {roc_auc:.2f})")
+plt.plot([0, 1], [0, 1], color="gray", linestyle="--")  # Diagonal
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("ROC Curve")
+plt.legend(loc="lower right")
+plt.grid()
+plt.show()
+</code></pre>
+
+
+<h2>📌 Outlier Detection (IQR Method)</h2>
+<pre><code>import pandas as pd
+
+def remove_outliers_iqr(df, factor=1.5):
+    """
+    Removes rows with outliers in any numeric column based on the IQR method.
+    
+    Parameters:
+        df (pd.DataFrame): Input dataframe.
+        factor (float): Multiplier for IQR, default is 1.5.
+        
+    Returns:
+        pd.DataFrame: DataFrame with outliers removed.
+    """
+    numeric_cols = df.select_dtypes(include=["number"]).columns
+    for col in numeric_cols:
+        Q1 = df[col].quantile(0.25)
+        Q3 = df[col].quantile(0.75)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - factor * IQR
+        upper_bound = Q3 + factor * IQR
+        df = df[(df[col] >= lower_bound) & (df[col] <= upper_bound)]
+    return df
+</code></pre>
+
+
+<h2>🧾 Confusion Matrix</h2>
+<pre><code>
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.datasets import load_iris
+
+# Load sample data
+X, y = load_iris(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+# Train model
+model = LogisticRegression(max_iter=200)
+model.fit(X_train, y_train)
+
+# Predict
+y_pred = model.predict(X_test)
+
+# Confusion matrix
+cm = confusion_matrix(y_test, y_pred)
+print("Confusion Matrix:\n", cm)
+</code></pre>
+
+
+
+<h2>📐 Support Vector Machine (SVM)</h2>
+<pre><code>
+from sklearn import datasets
+from sklearn.svm import SVC
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+# Load dataset
+iris = datasets.load_iris()
+X = iris.data
+y = iris.target
+
+# Binary classification: Classify class 0 vs others
+y = (y == 0).astype(int)
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=42
+)
+
+# Create and train SVM model
+svm = SVC(kernel="rbf", C=1, gamma="scale")
+svm.fit(X_train, y_train)
+
+# Predict and evaluate
+y_pred = svm.predict(X_test)
+print("SVM Accuracy:", accuracy_score(y_test, y_pred))
+</code></pre>
+
+
 </body>
 </html>
