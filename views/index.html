@@ -15,239 +15,207 @@
 
   <h2>1. Basic CSP Template (Always Start With This)</h2>
   <pre><code>from ortools.sat.python import cp_model
-
-model = cp_model.CpModel()
-
-# Define variables
-x = model.new_int_var(0, 2, "x")
-y = model.new_int_var(0, 2, "y")
-
-# Define constraints
-model.add(x != y)
-
-# Solve
-solver = cp_model.CpSolver()
-status = solver.solve(model)
-if status in [cp_model.FEASIBLE, cp_model.OPTIMAL]:
-    print(f"x = {solver.value(x)}, y = {solver.value(y)}")
-else:
-    print("No solution found.")</code></pre>
-
-    <h2>🪑 Seating Arrangement Puzzle (Logic Constraints)</h2>
-    <pre><code>from ortools.sat.python import cp_model
-    
-    # Create model
-    model = cp_model.CpModel()
-    
-    # Variables: Each panelist's seat position (0 to 5)
-    Amir = model.NewIntVar(1, 4, "Amir")  # Not at ends (0 or 5)
-    Bella = model.NewIntVar(0, 5, "Bella")
-    Charles = model.NewIntVar(0, 5, "Charles")
-    Diana = model.NewIntVar(1, 4, "Diana")  # Not at ends
-    Ethan = model.NewIntVar(2, 3, "Ethan")  # Must be in the middle
-    Farah = model.NewIntVar(0, 5, "Farah")
-    
-    # List of all variables
-    panelists = [Amir, Bella, Charles, Diana, Ethan, Farah]
-    names = ["Amir", "Bella", "Charles", "Diana", "Ethan", "Farah"]
-    
-    # 1. All panelists must sit in unique seats
-    model.AddAllDifferent(panelists)
-    
-    # 2. Bella must sit to the left of Farah
-    model.Add(Bella &lt; Farah)
-    
-    # 3. Charles must sit next to Diana
-    model.AddAbsEquality(model.NewIntVar(1, 1, "Charles_Diana_adjacent"), Charles - Diana)
-    
-    # 4. Amir already limited to 1–4 (not ends)
-    # 5. Ethan already limited to seats 2 or 3
-    # 6. Diana already limited to 1–4 (not ends)
-    
-    # Solver
-    solver = cp_model.CpSolver()
-    status = solver.Solve(model)
-    
-    # Output result
-    if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
-        # Create seat → name map
-        seat_map = {}
-        for var, name in zip(panelists, names):
-            seat_map[solver.Value(var)] = name
-    
-        print("Seat assignments (from left S0 to right S5):")
-        for seat in range(6):
-            print(f"Seat {seat}: {seat_map[seat]}")
-    else:
-        print("No solution found.")</code></pre>
-    
-
+  
+  model = cp_model.CpModel()
+  
+  # Define variables
+  x = model.new_int_var(0, 2, "x")
+  y = model.new_int_var(0, 2, "y")
+  
+  # Define constraints
+  model.add(x != y)
+  
+  # Solve
+  solver = cp_model.CpSolver()
+  status = solver.solve(model)
+  if status in [cp_model.FEASIBLE, cp_model.OPTIMAL]:
+      print(f"x = {solver.value(x)}, y = {solver.value(y)}")
+  else:
+      print("No solution found.")
+  </code></pre>
+  
+  <h2>🪑 Seating Arrangement Puzzle (Logic Constraints)</h2>
+  <pre><code>from ortools.sat.python import cp_model
+  
+  model = cp_model.CpModel()
+  
+  Amir = model.NewIntVar(1, 4, "Amir")
+  Bella = model.NewIntVar(0, 5, "Bella")
+  Charles = model.NewIntVar(0, 5, "Charles")
+  Diana = model.NewIntVar(1, 4, "Diana")
+  Ethan = model.NewIntVar(2, 3, "Ethan")
+  Farah = model.NewIntVar(0, 5, "Farah")
+  
+  panelists = [Amir, Bella, Charles, Diana, Ethan, Farah]
+  names = ["Amir", "Bella", "Charles", "Diana", "Ethan", "Farah"]
+  
+  model.AddAllDifferent(panelists)
+  model.Add(Bella < Farah)
+  model.AddAbsEquality(model.NewIntVar(1, 1, "Charles_Diana_adjacent"), Charles - Diana)
+  
+  solver = cp_model.CpSolver()
+  status = solver.Solve(model)
+  
+  if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
+      seat_map = {}
+      for var, name in zip(panelists, names):
+          seat_map[solver.Value(var)] = name
+  
+      print("Seat assignments (from left S0 to right S5):")
+      for seat in range(6):
+          print(f"Seat {seat}: {seat_map[seat]}")
+  else:
+      print("No solution found.")
+  </code></pre>
+  
   <h2>📆 3. Schedule Tasks (Time Slots)</h2>
-  <pre><code>slots = range(3)
-model = cp_model.CpModel()
-tasks = [model.new_int_var(0, 2, f"task_{i}") for i in slots]
-
-# No overlap
-model.add_all_different(tasks)
-
-solver = cp_model.CpSolver()
-solver.solve(model)
-for i, t in enumerate(tasks):
-    print(f"Task {i} → Time Slot {solver.value(t)}")</code></pre>
-
-    <h2>🤖 4. Diagonal Robot Navigation (5x5 Grid)</h2>
-    <pre><code>from ortools.sat.python import cp_model
-    import math
-    
-    GRID_SIZE = 5
-    
-    obstacles = set()
-    
-    start = (1, 1)
-    target = (4, 4)
-    
-    valid_moves = [(-1, -1), (-1, 0), (-1, 1),
-                   (0, -1),           (0, 1),
-                   (1, -1),  (1, 0),  (1, 1)]
-    
-    
-    class DiagonalPathSolutionPrinter(cp_model.CpSolverSolutionCallback):
-        """Prints valid paths."""
-        def __init__(self, variables, grid_size):
-            super().__init__()
-            self.variables = variables
-            self.grid_size = grid_size
-            self.solution_count = 0
-    
-        def on_solution_callback(self):
-            self.solution_count += 1
-            path = []
-            for i in range(len(self.variables)):
-                x = self.Value(self.variables[i][0])
-                y = self.Value(self.variables[i][1])
-                path.append((x, y))
-            print(f"Solution {self.solution_count}: {path}")
-    
-    
-    def solve_diagonal_path():
-        model = cp_model.CpModel()
-        max_steps = 2 * GRID_SIZE
-    
-        steps = [
-            (
-                model.NewIntVar(0, GRID_SIZE - 1, f"x_{i}"),
-                model.NewIntVar(0, GRID_SIZE - 1, f"y_{i}"),
-            )
-            for i in range(max_steps)
-        ]
-    
-        model.Add(steps[0][0] == start[0])
-        model.Add(steps[0][1] == start[1])
-        model.Add(steps[max_steps - 1][0] == target[0])
-        model.Add(steps[max_steps - 1][1] == target[1])
-    
-        for i in range(max_steps - 1):
-            dx = model.NewIntVar(-1, 1, f"dx_{i}")
-            dy = model.NewIntVar(-1, 1, f"dy_{i}")
-            model.AddAllowedAssignments([dx, dy], valid_moves)
-    
-            model.Add(steps[i + 1][0] == steps[i][0] + dx)
-            model.Add(steps[i + 1][1] == steps[i][1] + dy)
-    
-            for ox, oy in obstacles:
-                model.AddForbiddenAssignments(
-                    [steps[i + 1][0], steps[i + 1][1]], [(ox, oy)]
-                )
-    
-        cost = sum(math.sqrt(2) for _ in range(max_steps - 1))
-        model.Minimize(int(cost * 100))
-    
-        solver = cp_model.CpSolver()
-        solution_printer = DiagonalPathSolutionPrinter(steps, GRID_SIZE)
-        solver.parameters.enumerate_all_solutions = True
-        status = solver.Solve(model, solution_printer)
-    
-        if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-            print("Optimal path found!")
-        else:
-            print("No valid path found.")
-    
-    solve_diagonal_path()</code></pre>
-    
-    
-
-    <h2>🌊 Island Perimeter Detection (Largest Landmass via BFS + CSP)</h2>
-    <pre><code>from ortools.sat.python import cp_model
-    from collections import deque
-    
-    # Sample grid (1 = land, 0 = water)
-    grid = [[0, 1, 1, 0], [1, 1, 0, 0], [0, 1, 1, 1], [0, 0, 0, 0]]
-    
-    rows = len(grid)
-    cols = len(grid[0])
-    
-    # Step 1: Find the largest landmass (connected 1s) using BFS
-    def get_largest_landmass(grid):
-        visited = [[False] * cols for _ in range(rows)]
-        max_component = []
-    
-        def bfs(r, c):
-            queue = deque()
-            component = []
-            queue.append((r, c))
-            visited[r][c] = True
-    
-            while queue:
-                x, y = queue.popleft()
-                component.append((x, y))
-                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                    nx, ny = x + dx, y + dy
-                    if 0 &lt;= nx &lt; rows and 0 &lt;= ny &lt; cols:
-                        if not visited[nx][ny] and grid[nx][ny] == 1:
-                            visited[nx][ny] = True
-                            queue.append((nx, ny))
-            return component
-    
-        for i in range(rows):
-            for j in range(cols):
-                if grid[i][j] == 1 and not visited[i][j]:
-                    comp = bfs(i, j)
-                    if len(comp) &gt; len(max_component):
-                        max_component = comp
-        return max_component
-    
-    largest_landmass = get_largest_landmass(grid)
-    
-    # Step 2: CSP Model to compute perimeter of that landmass
-    model = cp_model.CpModel()
-    
-    # Each edge is either touching water/out-of-bounds = 1, else 0
-    edge_vars = []
-    
-    for r, c in largest_landmass:
-        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            nr, nc = r + dr, c + dc
-            is_edge = model.NewBoolVar(f"edge_{r}_{c}_{dr}_{dc}")
-            if not (0 &lt;= nr &lt; rows and 0 &lt;= nc &lt; cols) or grid[nr][nc] == 0:
-                # If adjacent to water or out of bounds, mark as edge
-                model.Add(is_edge == 1)
-            else:
-                model.Add(is_edge == 0)
-            edge_vars.append(is_edge)
-    
-    # Objective: Sum of all edge flags is the perimeter
-    perimeter = model.NewIntVar(0, len(edge_vars), "perimeter")
-    model.Add(perimeter == sum(edge_vars))
-    model.Maximize(perimeter)
-    
-    solver = cp_model.CpSolver()
-    status = solver.Solve(model)
-    
-    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-        print("Perimeter of the largest landmass:", solver.Value(perimeter))
-    else:
-        print("No solution found.")</code></pre>
-    
+  <pre><code>from ortools.sat.python import cp_model
+  
+  slots = range(3)
+  model = cp_model.CpModel()
+  tasks = [model.new_int_var(0, 2, f"task_{i}") for i in slots]
+  
+  model.add_all_different(tasks)
+  
+  solver = cp_model.CpSolver()
+  solver.solve(model)
+  for i, t in enumerate(tasks):
+      print(f"Task {i} → Time Slot {solver.value(t)}")
+  </code></pre>
+  
+  <h2>🤖 4. Diagonal Robot Navigation (5x5 Grid)</h2>
+  <pre><code>from ortools.sat.python import cp_model
+  import math
+  
+  GRID_SIZE = 5
+  obstacles = set()
+  start = (1, 1)
+  target = (4, 4)
+  
+  valid_moves = [(-1, -1), (-1, 0), (-1, 1),
+                 (0, -1),           (0, 1),
+                 (1, -1),  (1, 0),  (1, 1)]
+  
+  class DiagonalPathSolutionPrinter(cp_model.CpSolverSolutionCallback):
+      def __init__(self, variables, grid_size):
+          super().__init__()
+          self.variables = variables
+          self.grid_size = grid_size
+          self.solution_count = 0
+  
+      def on_solution_callback(self):
+          self.solution_count += 1
+          path = []
+          for i in range(len(self.variables)):
+              x = self.Value(self.variables[i][0])
+              y = self.Value(self.variables[i][1])
+              path.append((x, y))
+          print(f"Solution {self.solution_count}: {path}")
+  
+  def solve_diagonal_path():
+      model = cp_model.CpModel()
+      max_steps = 2 * GRID_SIZE
+  
+      steps = [(model.NewIntVar(0, GRID_SIZE - 1, f"x_{i}"),
+                model.NewIntVar(0, GRID_SIZE - 1, f"y_{i}"))
+               for i in range(max_steps)]
+  
+      model.Add(steps[0][0] == start[0])
+      model.Add(steps[0][1] == start[1])
+      model.Add(steps[-1][0] == target[0])
+      model.Add(steps[-1][1] == target[1])
+  
+      for i in range(max_steps - 1):
+          dx = model.NewIntVar(-1, 1, f"dx_{i}")
+          dy = model.NewIntVar(-1, 1, f"dy_{i}")
+          model.AddAllowedAssignments([dx, dy], valid_moves)
+          model.Add(steps[i + 1][0] == steps[i][0] + dx)
+          model.Add(steps[i + 1][1] == steps[i][1] + dy)
+          for ox, oy in obstacles:
+              model.AddForbiddenAssignments([steps[i + 1][0], steps[i + 1][1]], [(ox, oy)])
+  
+      cost = sum(math.sqrt(2) for _ in range(max_steps - 1))
+      model.Minimize(int(cost * 100))
+  
+      solver = cp_model.CpSolver()
+      solution_printer = DiagonalPathSolutionPrinter(steps, GRID_SIZE)
+      solver.parameters.enumerate_all_solutions = True
+      status = solver.Solve(model, solution_printer)
+  
+      if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+          print("Optimal path found!")
+      else:
+          print("No valid path found.")
+  
+  solve_diagonal_path()
+  </code></pre>
+  
+  <h2>🌊 Island Perimeter Detection (Largest Landmass via BFS + CSP)</h2>
+  <pre><code>from ortools.sat.python import cp_model
+  from collections import deque
+  
+  grid = [[0, 1, 1, 0], [1, 1, 0, 0], [0, 1, 1, 1], [0, 0, 0, 0]]
+  rows = len(grid)
+  cols = len(grid[0])
+  
+  def get_largest_landmass(grid):
+      visited = [[False] * cols for _ in range(rows)]
+      max_component = []
+  
+      def bfs(r, c):
+          queue = deque()
+          component = []
+          queue.append((r, c))
+          visited[r][c] = True
+  
+          while queue:
+              x, y = queue.popleft()
+              component.append((x, y))
+              for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                  nx, ny = x + dx, y + dy
+                  if 0 <= nx < rows and 0 <= ny < cols:
+                      if not visited[nx][ny] and grid[nx][ny] == 1:
+                          visited[nx][ny] = True
+                          queue.append((nx, ny))
+          return component
+  
+      for i in range(rows):
+          for j in range(cols):
+              if grid[i][j] == 1 and not visited[i][j]:
+                  comp = bfs(i, j)
+                  if len(comp) > len(max_component):
+                      max_component = comp
+      return max_component
+  
+  largest_landmass = get_largest_landmass(grid)
+  
+  model = cp_model.CpModel()
+  edge_vars = []
+  
+  for r, c in largest_landmass:
+      for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+          nr, nc = r + dr, c + dc
+          is_edge = model.NewBoolVar(f"edge_{r}_{c}_{dr}_{dc}")
+          if not (0 <= nr < rows and 0 <= nc < cols) or grid[nr][nc] == 0:
+              model.Add(is_edge == 1)
+          else:
+              model.Add(is_edge == 0)
+          edge_vars.append(is_edge)
+  
+  perimeter = model.NewIntVar(0, len(edge_vars), "perimeter")
+  model.Add(perimeter == sum(edge_vars))
+  model.Maximize(perimeter)
+  
+  solver = cp_model.CpSolver()
+  status = solver.Solve(model)
+  
+  if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+      print("Perimeter of the largest landmass:", solver.Value(perimeter))
+  else:
+      print("No solution found.")
+  </code></pre>
+  
+      
     <pre><code># Alternate version: Compute total land perimeter using CSP (no BFS)
         from ortools.sat.python import cp_model
         
@@ -298,7 +266,7 @@ for i, t in enumerate(tasks):
         ]
         
         compute_land_perimeter_csp(grid)</code></pre>
-        <h2>🧳 6. TSP with Permutations (10 Cities)</h2>
+        <h2>🧳 TSP with Permutations (10 Cities)</h2>
         <pre><code>from ortools.sat.python import cp_model
         import random
         
@@ -309,7 +277,7 @@ for i, t in enumerate(tasks):
         random.seed(42)
         distance = [[0 if i == j else random.randint(10, 100) for j in range(N)] for i in range(N)]
         for i in range(N):
-            for j in range(i+1, N):
+            for j in range(i + 1, N):
                 distance[j][i] = distance[i][j]
         
         # Create the model
@@ -321,12 +289,11 @@ for i, t in enumerate(tasks):
         # All cities must be visited exactly once
         model.AddAllDifferent(city)
         
-        # Create Boolean variables for distances between consecutive cities
+        # Create variables for distances between consecutive cities
         cost_vars = []
         for i in range(N):
             next_i = (i + 1) % N  # Return to start after last city
             dist = model.NewIntVar(0, 100, f'dist_{i}')
-            # Use a placeholder table with real values later
             model.AddElement(
                 model.NewConstant(i),
                 [distance[i][j] for j in range(N)],
@@ -349,77 +316,93 @@ for i, t in enumerate(tasks):
             print("Tour:", tour + [tour[0]])  # Include return to start
             print("Total cost:", solver.Value(total_cost))
         else:
-            print("No solution found.")</code></pre>
+            print("No solution found.")
+        </code></pre>
+
+        <h2>👑 N-Queens Problem (e.g., N = 8)</h2>
+        <pre><code>from ortools.sat.python import cp_model
         
-  <<h2>👑 7. N-Queens Problem (e.g., N=8)</h2>
-  <pre><code>from ortools.sat.python import cp_model
-  
-  def solve_n_queens(n):
-      model = cp_model.CpModel()
-  
-      # Variables: queen_in_row[i] = column position of queen in row i
-      queens = [model.NewIntVar(0, n - 1, f'Q_{i}') for i in range(n)]
-  
-      # Constraint 1: All queens must be in different columns
-      model.AddAllDifferent(queens)
-  
-      # Constraint 2: No two queens on the same diagonal
-      for i in range(n):
-          for j in range(i + 1, n):
-              model.Add(queens[i] != queens[j])
-              model.Add(queens[i] - i != queens[j] - j)  # \ diagonal
-              model.Add(queens[i] + i != queens[j] + j)  # / diagonal
-  
-      # Solve
-      solver = cp_model.CpSolver()
-      status = solver.Solve(model)
-  
-      # Output solution
-      if status in (cp_model.FEASIBLE, cp_model.OPTIMAL):
-          print(f"\nSolution for {n}-Queens:")
-          for i in range(n):
-              row = ['.'] * n
-              row[solver.Value(queens[i])] = 'Q'
-              print(' '.join(row))
-      else:
-          print("No solution found.")
-  
-  # Example: Solve for N = 8
-  solve_n_queens(8)</code></pre>
+        def solve_n_queens(n):
+            model = cp_model.CpModel()
+        
+            # Variables: queen_in_row[i] = column position of queen in row i
+            queens = [model.NewIntVar(0, n - 1, f'Q_{i}') for i in range(n)]
+        
+            # Constraint 1: All queens must be in different columns
+            model.AddAllDifferent(queens)
+        
+            # Constraint 2: No two queens on the same diagonal
+            for i in range(n):
+                for j in range(i + 1, n):
+                    model.Add(queens[i] != queens[j])
+                    model.Add(queens[i] - i != queens[j] - j)  # \ diagonal
+                    model.Add(queens[i] + i != queens[j] + j)  # / diagonal
+        
+            # Solve
+            solver = cp_model.CpSolver()
+            status = solver.Solve(model)
+        
+            # Output solution
+            if status in (cp_model.FEASIBLE, cp_model.OPTIMAL):
+                print(f"\nSolution for {n}-Queens:")
+                for i in range(n):
+                    row = ['.'] * n
+                    row[solver.Value(queens[i])] = 'Q'
+                    print(' '.join(row))
+            else:
+                print("No solution found.")
+        
+        # Example: Solve for N = 8
+        solve_n_queens(8)
+        </code></pre>
 
-  <h2>📈 8. Optimization Problem (Maximize Objective)</h2>
-  <pre><code>model = cp_model.CpModel()
-x = model.new_int_var(0, 10, "x")
-y = model.new_int_var(0, 10, "y")
-z = model.new_int_var(0, 10, "z")
+        <h2>📈 Optimization Problem (Maximize Objective)</h2>
+        <pre><code>from ortools.sat.python import cp_model
+        
+        model = cp_model.CpModel()
+        
+        x = model.new_int_var(0, 10, "x")
+        y = model.new_int_var(0, 10, "y")
+        z = model.new_int_var(0, 10, "z")
+        
+        model.add(2 * x + y + z <= 20)
+        model.add(3 * x - 2 * y + z <= 25)
+        
+        model.maximize(2 * x + 3 * y + 5 * z)
+        
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+        
+        print(f"Objective = {solver.objective_value}")
+        print(f"x = {solver.value(x)}, y = {solver.value(y)}, z = {solver.value(z)}")
+        </code></pre>
 
-model.add(2*x + y + z <= 20)
-model.add(3*x - 2*y + z <= 25)
+        
+        <h2>🔁 Get All Solutions</h2>
+<pre><code>from ortools.sat.python import cp_model
 
-model.maximize(2*x + 3*y + 5*z)
+class SolutionPrinter(cp_model.CpSolverSolutionCallback):
+    def __init__(self, vars):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.vars = vars
 
-solver = cp_model.CpSolver()
-status = solver.solve(model)
-print(f"Objective = {solver.objective_value}")
-print(f"x={solver.value(x)}, y={solver.value(y)}, z={solver.value(z)}")</code></pre>
-
-  <h2>🔁 9. Get All Solutions</h2>
-  <pre><code>class SolutionPrinter(cp_model.CpSolverSolutionCallback):
-    def __init__(self, vars): cp_model.CpSolverSolutionCallback.__init__(self); self.vars = vars
-    def on_solution_callback(self): print("Solution:", [self.Value(v) for v in self.vars])
+    def on_solution_callback(self):
+        print("Solution:", [self.Value(v) for v in self.vars])
 
 model = cp_model.CpModel()
+
 x = model.new_int_var(0, 2, "x")
 y = model.new_int_var(0, 2, "y")
 z = model.new_int_var(0, 2, "z")
+
 model.add(x != y)
 
 solver = cp_model.CpSolver()
 solver.parameters.enumerate_all_solutions = True
-solver.solve(model, SolutionPrinter([x, y, z]))</code></pre>
+solver.solve(model, SolutionPrinter([x, y, z]))
+</code></pre>
 
-
-<h1>📊 Supervised Learning – Linear, Logistic, Decision Tree, Gaussian Naive Bayes</h1>
+<h1>📊 Supervised Learning – Linear, Logistic, Decision Tree, Gaussian Naive Bayes (ALL in ONE)</h1>
 <pre><code>import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score, KFold
@@ -787,6 +770,112 @@ for train_index, test_index in loo.split(X):
     
     # TODO: Train and evaluate a model here
     # e.g., fit LogisticRegression, make prediction, append accuracy
+</code></pre>
+
+
+<h2>🧼 Supervised Learning – Data Preprocessing</h2>
+<pre><code>import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split, cross_val_score, KFold
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+
+# Load dataset
+df = pd.read_csv('Amazon_Sale_Report.csv')
+
+# Drop duplicates if any
+df.drop_duplicates(inplace=True)
+
+# Identify missing values and fill with mean
+missing_values = df.isnull().sum()
+print("\nMissing values before imputation:\n", missing_values)
+
+# Impute missing numeric values with the mean
+imputer = SimpleImputer(strategy='mean')
+df_cleaned = pd.DataFrame(imputer.fit_transform(df), columns=df.columns)
+
+# After imputation, check again for missing values
+missing_values_after_imputation = df_cleaned.isnull().sum()
+print("\nMissing values after imputation:\n", missing_values_after_imputation)
+
+# Convert categorical variables using Label Encoding
+label_encoders = {}
+for col in df_cleaned.select_dtypes(include='object').columns:
+    le = LabelEncoder()
+    df_cleaned[col] = le.fit_transform(df_cleaned[col])
+    label_encoders[col] = le
+
+# Separate features and target
+X = df_cleaned.drop('B2B', axis=1)
+y = df_cleaned['B2B']
+
+# Standardize numeric features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+</code></pre>
+
+
+<h2>🧪 Supervised Learning – Train-Test-Split, Initialize and Predict Models</h2>
+<pre><code># Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+# Initialize models
+lr_model = LinearRegression()
+nb_model = GaussianNB()
+log_model = LogisticRegression(max_iter=1000)
+dt_model = DecisionTreeClassifier(random_state=42)
+
+# Fit models
+lr_model.fit(X_train, y_train)
+nb_model.fit(X_train, y_train)
+log_model.fit(X_train, y_train)
+dt_model.fit(X_train, y_train)
+
+# Linear regression outputs continuous values, convert to binary
+lr_preds = lr_model.predict(X_test)
+lr_preds_binary = np.where(lr_preds >= 0.5, 1, 0)
+
+# Predictions
+nb_preds = nb_model.predict(X_test)
+log_preds = log_model.predict(X_test)
+dt_preds = dt_model.predict(X_test)
+</code></pre>
+
+
+<h2>📊 Supervised Learning – Evaluate Models, Confusion Matrix, K-Fold</h2>
+<pre><code># Evaluation on test set
+print("\n--- Test Set Evaluation ---")
+print("Logistic Regression:\n", classification_report(y_test, log_preds))
+print("Naive Bayes:\n", classification_report(y_test, nb_preds))
+print("Decision Tree:\n", classification_report(y_test, dt_preds))
+print("Linear Regression:\n", classification_report(y_test, lr_preds_binary))
+
+# Plot Confusion Matrices
+models = {
+    "Linear Regression": (lr_preds_binary, "Blues"),
+    "Naive Bayes": (nb_preds, "Greens"),
+    "Logistic Regression": (log_preds, "Oranges"),
+    "Decision Tree": (dt_preds, "Purples")
+}
+
+for name, (preds, cmap) in models.items():
+    cm = confusion_matrix(y_test, preds)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+    disp.plot(cmap=cmap)
+    plt.title(f"{name} - Confusion Matrix")
+    plt.show()
+
+# K-Fold Cross Validation (5 folds)
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+print("\n--- K-Fold Cross Validation (cv=5) ---")
+for model, name in zip([log_model, nb_model, dt_model], ["Logistic Regression", "Naive Bayes", "Decision Tree"]):
+    scores = cross_val_score(model, X_scaled, y, cv=kf)
+    print(f"{name} Mean Accuracy: {scores.mean():.4f}, Scores: {scores}")
 </code></pre>
 
 
