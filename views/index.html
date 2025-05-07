@@ -11,9 +11,34 @@
   </style>
 </head>
 <body>
+
+    <h1>📚 Table of Contents</h1>
+<ul>
+  <li><a href="#csp-basic">Basic CSP Template</a></li>
+  <li><a href="#csp-seating">Seating Arrangement Puzzle</a></li>
+  <li><a href="#csp-schedule">Schedule Tasks</a></li>
+  <li><a href="#csp-robot">Diagonal Robot Navigation</a></li>
+  <li><a href="#csp-island">Island Perimeter Detection</a></li>
+  <li><a href="#csp-tsp">TSP with Permutations</a></li>
+  <li><a href="#csp-nqueens">N-Queens Problem</a></li>
+  <li><a href="#csp-optimization">Optimization Problem</a></li>
+  <li><a href="#csp-allsolutions">Get All Solutions</a></li>
+  <li><a href="#ml-supervised">Supervised Learning (All Models)</a></li>
+  <li><a href="#ml-preprocessing">Data Preprocessing</a></li>
+  <li><a href="#ml-train-predict">Train-Test-Split + Predict</a></li>
+  <li><a href="#ml-evaluate">Model Evaluation + K-Fold</a></li>
+  <li><a href="#ml-onehot">One Hot Encoding</a></li>
+  <li><a href="#ml-roc">ROC Curve</a></li>
+  <li><a href="#ml-outlier">Outlier Detection</a></li>
+  <li><a href="#ml-confusion">Confusion Matrix</a></li>
+  <li><a href="#ml-svm">Support Vector Machine</a></li>
+  <li><a href="#ml-unsupervised">Unsupervised Learning (K-Means)</a></li>
+</ul>
+<hr>
+
   <h1>🧠 Constraint Satisfaction Problem (CSP) Examples</h1>
 
-  <h2>1. Basic CSP Template (Always Start With This)</h2>
+  <h2 id="csp-basic">1. Basic CSP Template (Always Start With This)</h2>
 <pre><code>
 from ortools.sat.python import cp_model
 
@@ -36,7 +61,7 @@ else:
 </code></pre>
   
 
-  <h2>🪑 Seating Arrangement Puzzle (Logic Constraints)</h2>
+  <h2 	id="csp-seating">🪑 Seating Arrangement Puzzle (Logic Constraints)</h2>
 <pre><code>
 from ortools.sat.python import cp_model
   
@@ -72,7 +97,7 @@ else:
 </code></pre>
   
 
-  <h2>📆 3. Schedule Tasks (Time Slots)</h2>
+  <h2 id="csp-schedule">📆 3. Schedule Tasks (Time Slots)</h2>
 <pre><code>
 from ortools.sat.python import cp_model
   
@@ -88,7 +113,7 @@ for i, t in enumerate(tasks):
     print(f"Task {i} → Time Slot {solver.value(t)}")
 </code></pre>
   
-  <h2>🤖 4. Diagonal Robot Navigation (5x5 Grid)</h2>
+  <h2 id="csp-robot">🤖 4. Diagonal Robot Navigation (5x5 Grid)</h2>
 <pre><code>
 from ortools.sat.python import cp_model
 import math
@@ -157,7 +182,7 @@ solve_diagonal_path()
 </code></pre>
   
 
-  <h2>🌊 Island Perimeter Detection (Largest Landmass via BFS + CSP)</h2>
+  <h2 id="csp-island">🌊 Island Perimeter Detection (Largest Landmass via BFS + CSP)</h2>
 <pre><code>
 from ortools.sat.python import cp_model
 from collections import deque
@@ -275,7 +300,7 @@ grid = [
 compute_land_perimeter_csp(grid)
 </code></pre>
 
-        <h2>🧳 TSP with Permutations (10 Cities)</h2>
+        <h2 id="csp-tsp">🧳 TSP with Permutations (10 Cities)</h2>
 <pre><code>
 from ortools.sat.python import cp_model
 import random
@@ -329,7 +354,7 @@ else:
     print("No solution found.")
 </code></pre>
 
-        <h2>👑 N-Queens Problem (e.g., N = 8)</h2>
+        <h2 id="csp-nqueens">👑 N-Queens Problem (e.g., N = 8)</h2>
 <pre><code>
 from ortools.sat.python import cp_model
 
@@ -368,7 +393,7 @@ solve_n_queens(8)
 </code></pre>
 
 
-<h2>📈 Optimization Problem (Maximize Objective)</h2>
+<h2 	id="csp-optimization">📈 Optimization Problem (Maximize Objective)</h2>
 <pre><code>
 from ortools.sat.python import cp_model
 
@@ -391,7 +416,7 @@ print(f"x = {solver.value(x)}, y = {solver.value(y)}, z = {solver.value(z)}")
 </code></pre>
 
         
-        <h2>🔁 Get All Solutions</h2>
+        <h2 id="csp-allsolutions">🔁 Get All Solutions</h2>
 <pre><code>
 from ortools.sat.python import cp_model
 
@@ -416,99 +441,7 @@ solver.parameters.enumerate_all_solutions = True
 solver.solve(model, SolutionPrinter([x, y, z]))
 </code></pre>
 
-<h1>📊 Supervised Learning – Linear, Logistic, Decision Tree, Gaussian Naive Bayes (ALL in ONE)</h1>
-<pre><code>import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split, cross_val_score, KFold
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.naive_bayes import GaussianNB
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
-import matplotlib.pyplot as plt
-
-# Load dataset
-df = pd.read_csv('Amazon_Sale_Report.csv')
-
-# Drop duplicates if any
-df.drop_duplicates(inplace=True)
-
-# Identify and handle missing values
-imputer = SimpleImputer(strategy='most_frequent')
-df_cleaned = pd.DataFrame(imputer.fit_transform(df), columns=df.columns)
-
-# Convert categorical variables using Label Encoding
-label_encoders = {}
-for col in df_cleaned.select_dtypes(include='object').columns:
-    le = LabelEncoder()
-    df_cleaned[col] = le.fit_transform(df_cleaned[col])
-    label_encoders[col] = le
-
-# Separate features and target
-X = df_cleaned.drop('B2B', axis=1)
-y = df_cleaned['B2B']
-
-# Standardize numeric features
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
-
-# Train-test split
-X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
-
-# Initialize models
-lr_model = LinearRegression()
-nb_model = GaussianNB()
-log_model = LogisticRegression(max_iter=1000)
-dt_model = DecisionTreeClassifier(random_state=42)
-
-# Fit models
-lr_model.fit(X_train, y_train)
-nb_model.fit(X_train, y_train)
-log_model.fit(X_train, y_train)
-dt_model.fit(X_train, y_train)
-
-# Linear regression outputs continuous values, convert to binary
-lr_preds = lr_model.predict(X_test)
-lr_preds_binary = np.where(lr_preds >= 0.5, 1, 0)
-
-# Predictions
-nb_preds = nb_model.predict(X_test)
-log_preds = log_model.predict(X_test)
-dt_preds = dt_model.predict(X_test)
-
-# Evaluation on test set
-print("\n--- Test Set Evaluation ---")
-print("Logistic Regression:\n", classification_report(y_test, log_preds))
-print("Naive Bayes:\n", classification_report(y_test, nb_preds))
-print("Decision Tree:\n", classification_report(y_test, dt_preds))
-print("Linear Regression:\n", classification_report(y_test, lr_preds_binary))
-
-# Plot Confusion Matrices
-models = {
-    "Linear Regression": (lr_preds_binary, "Blues"),
-    "Naive Bayes": (nb_preds, "Greens"),
-    "Logistic Regression": (log_preds, "Oranges"),
-    "Decision Tree": (dt_preds, "Purples")
-}
-
-for name, (preds, cmap) in models.items():
-    cm = confusion_matrix(y_test, preds)
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm)
-    disp.plot(cmap=cmap)
-    plt.title(f"{name} - Confusion Matrix")
-    plt.show()
-
-# K-Fold Cross Validation (5 folds)
-kf = KFold(n_splits=5, shuffle=True, random_state=42)
-print("\n--- K-Fold Cross Validation (cv=5) ---")
-for model, name in zip([log_model, nb_model, dt_model], ["Logistic Regression", "Naive Bayes", "Decision Tree"]):
-    scores = cross_val_score(model, X_scaled, y, cv=kf)
-    print(f"{name} Mean Accuracy: {scores.mean():.4f}, Scores: {scores}")</code></pre>
-
-
-
-    <h1>📉 Unsupervised Learning – Customer Segmentation with K-Means</h1>
+    <h1 id="ml-unsupervised">📉 Unsupervised Learning – Customer Segmentation with K-Means</h1>
 <pre><code>import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -577,49 +510,6 @@ plt.show()
 # Optional: Describe clusters
 print(df.groupby('Cluster').mean())</code></pre>
 
-<h2>📌 K-Means with Elbow Method (Student Clustering)</h2>
-<pre><code>import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
-import numpy as np
-
-data = {}
-
-df = pd.DataFrame(data)
-
-features = df[["GPA", "study_hours", "attendance_rate"]]
-scaler = StandardScaler()
-scaled_features = scaler.fit_transform(features)
-
-wcss = []
-for i in range(2, 7):
-    kmeans = KMeans(n_clusters=i, random_state=42)
-    kmeans.fit(scaled_features)
-    wcss.append(kmeans.inertia_)
-
-plt.plot(range(2, 7), wcss, marker="o")
-plt.title("Elbow Method to Determine Optimal K")
-plt.xlabel("Number of clusters (K)")
-plt.ylabel("WCSS")
-plt.grid(True)
-plt.show()
-
-optimal_k = 3
-kmeans = KMeans(n_clusters=optimal_k, random_state=42)
-clusters = kmeans.fit_predict(scaled_features)
-df["cluster"] = clusters
-
-plt.figure(figsize=(8, 6))
-plt.scatter(df["study_hours"], df["GPA"], c=clusters, cmap="Set1", s=100)
-plt.title("Student Clusters Based on Study Hours and GPA")
-plt.xlabel("Average Weekly Study Hours")
-plt.ylabel("GPA")
-plt.grid(True)
-plt.show()
-
-print(df[["student_id", "cluster"]])</code></pre>
-
 
 <h2>🚗 K-Means Clustering – Vehicle Data (With vs Without Scaling)</h2>
 <pre><code>import pandas as pd
@@ -682,7 +572,7 @@ plt.tight_layout()
 plt.show()</code></pre>
 
 
-<h2>📂 Logistic Regression with K-Fold Cross Validation</h2>
+<h2 id="ml-supervised">📂 Logistic Regression with K-Fold Cross Validation</h2>
 <pre><code>from sklearn.model_selection import KFold
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
@@ -787,7 +677,7 @@ for train_index, test_index in loo.split(X):
 </code></pre>
 
 
-<h2>🧼 Supervised Learning – Data Preprocessing</h2>
+<h2 	id="ml-preprocessing">🧼 Supervised Learning – Data Preprocessing</h2>
 <pre><code>import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score, KFold
@@ -834,7 +724,7 @@ X_scaled = scaler.fit_transform(X)
 </code></pre>
 
 
-<h2>🧪 Supervised Learning – Train-Test-Split, Initialize and Predict Models</h2>
+<h2 id="ml-train-predict">🧪 Supervised Learning – Train-Test-Split, Initialize and Predict Models</h2>
 <pre><code># Train-test split
 X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 
@@ -861,7 +751,7 @@ dt_preds = dt_model.predict(X_test)
 </code></pre>
 
 
-<h2>📊 Supervised Learning – Evaluate Models, Confusion Matrix, K-Fold</h2>
+<h2 id="ml-evaluate">📊 Supervised Learning – Evaluate Models, Confusion Matrix, K-Fold</h2>
 <pre><code># Evaluation on test set
 print("\n--- Test Set Evaluation ---")
 print("Logistic Regression:\n", classification_report(y_test, log_preds))
@@ -893,13 +783,13 @@ for model, name in zip([log_model, nb_model, dt_model], ["Logistic Regression", 
 </code></pre>
 
 
-<h2>🧮 One Hot Encoding</h2>
+<h2 	id="ml-onehot">🧮 One Hot Encoding</h2>
 <pre><code>
 df = pd.get_dummies(df, columns=["embarked"], drop_first=True)
 print(df.head())
 </code></pre>
 
-<h2>📉 ROC Curve</h2>
+<h2 	id="ml-roc">📉 ROC Curve</h2>
 <pre><code>
 from sklearn.metrics import roc_curve, auc
 import matplotlib.pyplot as plt
@@ -926,7 +816,7 @@ plt.show()
 </code></pre>
 
 
-<h2>📌 Outlier Detection (IQR Method)</h2>
+<h2 	id="ml-outlier">📌 Outlier Detection (IQR Method)</h2>
 <pre><code>import pandas as pd
 
 def remove_outliers_iqr(df, factor=1.5):
@@ -952,7 +842,7 @@ def remove_outliers_iqr(df, factor=1.5):
 </code></pre>
 
 
-<h2>🧾 Confusion Matrix</h2>
+<h2 	id="ml-confusion">🧾 Confusion Matrix</h2>
 <pre><code>
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
@@ -977,7 +867,7 @@ print("Confusion Matrix:\n", cm)
 
 
 
-<h2>📐 Support Vector Machine (SVM)</h2>
+<h2 	id="ml-svm">📐 Support Vector Machine (SVM)</h2>
 <pre><code>
 from sklearn import datasets
 from sklearn.svm import SVC
@@ -1006,6 +896,96 @@ y_pred = svm.predict(X_test)
 print("SVM Accuracy:", accuracy_score(y_test, y_pred))
 </code></pre>
 
+
+<h1 >📊 Supervised Learning – Linear, Logistic, Decision Tree, Gaussian Naive Bayes (ALL in ONE)</h1>
+<pre><code>import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split, cross_val_score, KFold
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+
+# Load dataset
+df = pd.read_csv('Amazon_Sale_Report.csv')
+
+# Drop duplicates if any
+df.drop_duplicates(inplace=True)
+
+# Identify and handle missing values
+imputer = SimpleImputer(strategy='most_frequent')
+df_cleaned = pd.DataFrame(imputer.fit_transform(df), columns=df.columns)
+
+# Convert categorical variables using Label Encoding
+label_encoders = {}
+for col in df_cleaned.select_dtypes(include='object').columns:
+    le = LabelEncoder()
+    df_cleaned[col] = le.fit_transform(df_cleaned[col])
+    label_encoders[col] = le
+
+# Separate features and target
+X = df_cleaned.drop('B2B', axis=1)
+y = df_cleaned['B2B']
+
+# Standardize numeric features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+# Initialize models
+lr_model = LinearRegression()
+nb_model = GaussianNB()
+log_model = LogisticRegression(max_iter=1000)
+dt_model = DecisionTreeClassifier(random_state=42)
+
+# Fit models
+lr_model.fit(X_train, y_train)
+nb_model.fit(X_train, y_train)
+log_model.fit(X_train, y_train)
+dt_model.fit(X_train, y_train)
+
+# Linear regression outputs continuous values, convert to binary
+lr_preds = lr_model.predict(X_test)
+lr_preds_binary = np.where(lr_preds >= 0.5, 1, 0)
+
+# Predictions
+nb_preds = nb_model.predict(X_test)
+log_preds = log_model.predict(X_test)
+dt_preds = dt_model.predict(X_test)
+
+# Evaluation on test set
+print("\n--- Test Set Evaluation ---")
+print("Logistic Regression:\n", classification_report(y_test, log_preds))
+print("Naive Bayes:\n", classification_report(y_test, nb_preds))
+print("Decision Tree:\n", classification_report(y_test, dt_preds))
+print("Linear Regression:\n", classification_report(y_test, lr_preds_binary))
+
+# Plot Confusion Matrices
+models = {
+    "Linear Regression": (lr_preds_binary, "Blues"),
+    "Naive Bayes": (nb_preds, "Greens"),
+    "Logistic Regression": (log_preds, "Oranges"),
+    "Decision Tree": (dt_preds, "Purples")
+}
+
+for name, (preds, cmap) in models.items():
+    cm = confusion_matrix(y_test, preds)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+    disp.plot(cmap=cmap)
+    plt.title(f"{name} - Confusion Matrix")
+    plt.show()
+
+# K-Fold Cross Validation (5 folds)
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+print("\n--- K-Fold Cross Validation (cv=5) ---")
+for model, name in zip([log_model, nb_model, dt_model], ["Logistic Regression", "Naive Bayes", "Decision Tree"]):
+    scores = cross_val_score(model, X_scaled, y, cv=kf)
+    print(f"{name} Mean Accuracy: {scores.mean():.4f}, Scores: {scores}")</code></pre>
 
 </body>
 </html>
