@@ -97,21 +97,41 @@ else:
 </code></pre>
   
 
-  <h2 id="csp-schedule">📆 3. Schedule Tasks (Time Slots)</h2>
+<h2 id="csp-schedule">📆 Schedule Tasks – College Course Timetable (No Conflicts)</h2>
 <pre><code>
 from ortools.sat.python import cp_model
-  
-slots = range(3)
+
+# Step 1: Define data
+courses = ['Math', 'Physics', 'Chemistry', 'CS']
+conflicts = [('Math', 'Physics'), ('Physics', 'Chemistry'), ('Chemistry', 'CS')]
+time_slots = range(3)  # 0 = Morning, 1 = Afternoon, 2 = Evening
+
+# Step 2: Create model
 model = cp_model.CpModel()
-tasks = [model.new_int_var(0, 2, f"task_{i}") for i in slots]
 
-model.add_all_different(tasks)
+# Step 3: Create variables for each course (domain = 0, 1, 2)
+course_vars = {
+    course: model.NewIntVar(0, len(time_slots) - 1, course) for course in courses
+}
 
+# Step 4: Add constraints for conflicting courses
+for c1, c2 in conflicts:
+    model.Add(course_vars[c1] != course_vars[c2])
+
+# Step 5: Solve the model
 solver = cp_model.CpSolver()
-solver.solve(model)
-for i, t in enumerate(tasks):
-    print(f"Task {i} → Time Slot {solver.value(t)}")
+status = solver.Solve(model)
+
+# Step 6: Display the result
+if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
+    print("Course Schedule:")
+    slot_names = ['Morning', 'Afternoon', 'Evening']
+    for course in courses:
+        print(f"{course}: {slot_names[solver.Value(course_vars[course])]}")
+else:
+    print("No feasible schedule found.")
 </code></pre>
+
   
   <h2 id="csp-robot">🤖 4. Diagonal Robot Navigation (5x5 Grid)</h2>
 <pre><code>
