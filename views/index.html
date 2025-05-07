@@ -33,22 +33,54 @@ if status in [cp_model.FEASIBLE, cp_model.OPTIMAL]:
 else:
     print("No solution found.")</code></pre>
 
-  <h2>🪑 2. Seating Arrangement</h2>
-  <pre><code>names = ['A', 'B', 'C', 'D']
-n = len(names)
-model = cp_model.CpModel()
-
-seats = [model.new_int_var(0, n - 1, name) for name in names]
-model.add_all_different(seats)
-
-# Suppose A and B are enemies
-model.add_abs_equality(model.new_int_var(1, n-1, ""), seats[0] - seats[1])
-
-solver = cp_model.CpSolver()
-status = solver.solve(model)
-if status == cp_model.OPTIMAL:
-    for i, var in enumerate(seats):
-        print(f"{names[i]}: Seat {solver.value(var)}")</code></pre>
+    <h2>🪑 Seating Arrangement Puzzle (Logic Constraints)</h2>
+    <pre><code>from ortools.sat.python import cp_model
+    
+    # Create model
+    model = cp_model.CpModel()
+    
+    # Variables: Each panelist's seat position (0 to 5)
+    Amir = model.NewIntVar(1, 4, "Amir")  # Not at ends (0 or 5)
+    Bella = model.NewIntVar(0, 5, "Bella")
+    Charles = model.NewIntVar(0, 5, "Charles")
+    Diana = model.NewIntVar(1, 4, "Diana")  # Not at ends
+    Ethan = model.NewIntVar(2, 3, "Ethan")  # Must be in the middle
+    Farah = model.NewIntVar(0, 5, "Farah")
+    
+    # List of all variables
+    panelists = [Amir, Bella, Charles, Diana, Ethan, Farah]
+    names = ["Amir", "Bella", "Charles", "Diana", "Ethan", "Farah"]
+    
+    # 1. All panelists must sit in unique seats
+    model.AddAllDifferent(panelists)
+    
+    # 2. Bella must sit to the left of Farah
+    model.Add(Bella &lt; Farah)
+    
+    # 3. Charles must sit next to Diana
+    model.AddAbsEquality(model.NewIntVar(1, 1, "Charles_Diana_adjacent"), Charles - Diana)
+    
+    # 4. Amir already limited to 1–4 (not ends)
+    # 5. Ethan already limited to seats 2 or 3
+    # 6. Diana already limited to 1–4 (not ends)
+    
+    # Solver
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+    
+    # Output result
+    if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
+        # Create seat → name map
+        seat_map = {}
+        for var, name in zip(panelists, names):
+            seat_map[solver.Value(var)] = name
+    
+        print("Seat assignments (from left S0 to right S5):")
+        for seat in range(6):
+            print(f"Seat {seat}: {seat_map[seat]}")
+    else:
+        print("No solution found.")</code></pre>
+    
 
   <h2>📆 3. Schedule Tasks (Time Slots)</h2>
   <pre><code>slots = range(3)
