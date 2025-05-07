@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSP Examples with OR-Tools</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
+    h2 { margin-top: 40px; color: #333; }
+    pre { background: #fff; padding: 12px; border-left: 4px solid #007acc; overflow-x: auto; }
+    code { font-family: Consolas, monospace; font-size: 14px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>🧠 Constraint Satisfaction Problem (CSP) Examples</h1>
+
+  <h2>1. Basic CSP Template (Always Start With This)</h2>
+  <pre><code>from ortools.sat.python import cp_model
+
+model = cp_model.CpModel()
+
+# Define variables
+x = model.new_int_var(0, 2, "x")
+y = model.new_int_var(0, 2, "y")
+
+# Define constraints
+model.add(x != y)
+
+# Solve
+solver = cp_model.CpSolver()
+status = solver.solve(model)
+if status in [cp_model.FEASIBLE, cp_model.OPTIMAL]:
+    print(f"x = {solver.value(x)}, y = {solver.value(y)}")
+else:
+    print("No solution found.")</code></pre>
+
+  <h2>🪑 2. Seating Arrangement</h2>
+  <pre><code>names = ['A', 'B', 'C', 'D']
+n = len(names)
+model = cp_model.CpModel()
+
+seats = [model.new_int_var(0, n - 1, name) for name in names]
+model.add_all_different(seats)
+
+# Suppose A and B are enemies
+model.add_abs_equality(model.new_int_var(1, n-1, ""), seats[0] - seats[1])
+
+solver = cp_model.CpSolver()
+status = solver.solve(model)
+if status == cp_model.OPTIMAL:
+    for i, var in enumerate(seats):
+        print(f"{names[i]}: Seat {solver.value(var)}")</code></pre>
+
+  <h2>📆 3. Schedule Tasks (Time Slots)</h2>
+  <pre><code>slots = range(3)
+model = cp_model.CpModel()
+tasks = [model.new_int_var(0, 2, f"task_{i}") for i in slots]
+
+# No overlap
+model.add_all_different(tasks)
+
+solver = cp_model.CpSolver()
+solver.solve(model)
+for i, t in enumerate(tasks):
+    print(f"Task {i} → Time Slot {solver.value(t)}")</code></pre>
+
+  <h2>🤖 4. Diagonal Robot Navigation (5x5 Grid)</h2>
+  <pre><code>from ortools.sat.python import cp_model
+
+model = cp_model.CpModel()
+steps = 6
+x = [model.new_int_var(0, 4, f"x_{i}") for i in range(steps)]
+y = [model.new_int_var(0, 4, f"y_{i}") for i in range(steps)]
+
+# Start and End
+model.add(x[0] == 0); model.add(y[0] == 0)
+model.add(x[-1] == 4); model.add(y[-1] == 4)
+
+# Move diagonally
+for i in range(steps - 1):
+    dx = model.new_int_var(-1, 1, f"dx_{i}")
+    dy = model.new_int_var(-1, 1, f"dy_{i}")
+    model.add(dx != 0); model.add(dy != 0)
+    model.add(x[i + 1] == x[i] + dx)
+    model.add(y[i + 1] == y[i] + dy)
+
+# Avoid obstacle at (2,2)
+for i in range(steps):
+    model.add_any([x[i] != 2, y[i] != 2])
+
+solver = cp_model.CpSolver()
+solver.solve(model)
+for i in range(steps):
+    print(f"Step {i}: ({solver.value(x[i])}, {solver.value(y[i])})")</code></pre>
+
+  <h2>🌊 5. Island Perimeter Detection</h2>
+  <pre><code>grid = [
+    [1, 1, 0],
+    [1, 0, 0],
+    [1, 1, 1]
+]
+rows, cols = len(grid), len(grid[0])
+perimeter = 0
+for i in range(rows):
+    for j in range(cols):
+        if grid[i][j] == 1:
+            for dx, dy in [(-1,0),(1,0),(0,-1),(0,1)]:
+                ni, nj = i+dx, j+dy
+                if ni&lt;0 or nj&lt;0 or ni&gt;=rows or nj&gt;=cols or grid[ni][nj]==0:
+                    perimeter += 1
+print(f"Island Perimeter: {perimeter}")</code></pre>
+
+  <h2>🧳 6. TSP with Permutations (10 Cities)</h2>
+  <pre><code>from ortools.sat.python import cp_model
+
+model = cp_model.CpModel()
+N = 5  # use 10 for full TSP
+cities = list(range(N))
+dist = [[abs(i - j) for j in cities] for i in cities]
+
+# Variables: position[i] = index of city at position i
+position = [model.new_int_var(0, N - 1, f"pos_{i}") for i in cities]
+model.add_all_different(position)
+
+# Total distance
+total_cost = model.new_int_var(0, 1000, "total_cost")
+model.add(total_cost == sum(dist[position[i].Index()][position[i+1].Index()] for i in range(N-1)))
+
+model.minimize(total_cost)
+
+solver = cp_model.CpSolver()
+status = solver.solve(model)
+if status == cp_model.OPTIMAL:
+    print("TSP Path:")
+    for i in range(N):
+        print(f"{i}: City {solver.value(position[i])}")</code></pre>
+
+  <h2>👑 7. N-Queens Problem (e.g., N=8)</h2>
+  <pre><code>N = 8
+model = cp_model.CpModel()
+queens = [model.new_int_var(0, N - 1, f"Q{i}") for i in range(N)]
+
+model.add_all_different(queens)
+model.add_all_different([queens[i] + i for i in range(N)])
+model.add_all_different([queens[i] - i for i in range(N)])
+
+solver = cp_model.CpSolver()
+solver.parameters.enumerate_all_solutions = True
+
+class NQueenPrinter(cp_model.CpSolverSolutionCallback):
+    def __init__(self, queens): super().__init__(); self.queens = queens
+    def on_solution_callback(self):
+        for i in range(N):
+            row = ["Q" if self.Value(self.queens[i]) == j else "_" for j in range(N)]
+            print(" ".join(row)); print()
+
+solver.Solve(model, NQueenPrinter(queens))</code></pre>
+
+  <h2>📈 8. Optimization Problem (Maximize Objective)</h2>
+  <pre><code>model = cp_model.CpModel()
+x = model.new_int_var(0, 10, "x")
+y = model.new_int_var(0, 10, "y")
+z = model.new_int_var(0, 10, "z")
+
+model.add(2*x + y + z <= 20)
+model.add(3*x - 2*y + z <= 25)
+
+model.maximize(2*x + 3*y + 5*z)
+
+solver = cp_model.CpSolver()
+status = solver.solve(model)
+print(f"Objective = {solver.objective_value}")
+print(f"x={solver.value(x)}, y={solver.value(y)}, z={solver.value(z)}")</code></pre>
+
+  <h2>🔁 9. Get All Solutions</h2>
+  <pre><code>class SolutionPrinter(cp_model.CpSolverSolutionCallback):
+    def __init__(self, vars): cp_model.CpSolverSolutionCallback.__init__(self); self.vars = vars
+    def on_solution_callback(self): print("Solution:", [self.Value(v) for v in self.vars])
+
+model = cp_model.CpModel()
+x = model.new_int_var(0, 2, "x")
+y = model.new_int_var(0, 2, "y")
+z = model.new_int_var(0, 2, "z")
+model.add(x != y)
+
+solver = cp_model.CpSolver()
+solver.parameters.enumerate_all_solutions = True
+solver.solve(model, SolutionPrinter([x, y, z]))</code></pre>
+
+</body>
+</html>
