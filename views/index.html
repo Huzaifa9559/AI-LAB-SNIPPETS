@@ -363,5 +363,167 @@ solver = cp_model.CpSolver()
 solver.parameters.enumerate_all_solutions = True
 solver.solve(model, SolutionPrinter([x, y, z]))</code></pre>
 
+
+<h1>📊 Supervised Learning – Linear, Logistic, Decision Tree, Gaussian Naive Bayes</h1>
+<pre><code>import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split, cross_val_score, KFold
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+
+# Load dataset
+df = pd.read_csv('Amazon_Sale_Report.csv')
+
+# Drop duplicates if any
+df.drop_duplicates(inplace=True)
+
+# Identify and handle missing values
+imputer = SimpleImputer(strategy='most_frequent')
+df_cleaned = pd.DataFrame(imputer.fit_transform(df), columns=df.columns)
+
+# Convert categorical variables using Label Encoding
+label_encoders = {}
+for col in df_cleaned.select_dtypes(include='object').columns:
+    le = LabelEncoder()
+    df_cleaned[col] = le.fit_transform(df_cleaned[col])
+    label_encoders[col] = le
+
+# Separate features and target
+X = df_cleaned.drop('B2B', axis=1)
+y = df_cleaned['B2B']
+
+# Standardize numeric features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+# Initialize models
+lr_model = LinearRegression()
+nb_model = GaussianNB()
+log_model = LogisticRegression(max_iter=1000)
+dt_model = DecisionTreeClassifier(random_state=42)
+
+# Fit models
+lr_model.fit(X_train, y_train)
+nb_model.fit(X_train, y_train)
+log_model.fit(X_train, y_train)
+dt_model.fit(X_train, y_train)
+
+# Linear regression outputs continuous values, convert to binary
+lr_preds = lr_model.predict(X_test)
+lr_preds_binary = np.where(lr_preds >= 0.5, 1, 0)
+
+# Predictions
+nb_preds = nb_model.predict(X_test)
+log_preds = log_model.predict(X_test)
+dt_preds = dt_model.predict(X_test)
+
+# Evaluation on test set
+print("\n--- Test Set Evaluation ---")
+print("Logistic Regression:\n", classification_report(y_test, log_preds))
+print("Naive Bayes:\n", classification_report(y_test, nb_preds))
+print("Decision Tree:\n", classification_report(y_test, dt_preds))
+print("Linear Regression:\n", classification_report(y_test, lr_preds_binary))
+
+# Plot Confusion Matrices
+models = {
+    "Linear Regression": (lr_preds_binary, "Blues"),
+    "Naive Bayes": (nb_preds, "Greens"),
+    "Logistic Regression": (log_preds, "Oranges"),
+    "Decision Tree": (dt_preds, "Purples")
+}
+
+for name, (preds, cmap) in models.items():
+    cm = confusion_matrix(y_test, preds)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+    disp.plot(cmap=cmap)
+    plt.title(f"{name} - Confusion Matrix")
+    plt.show()
+
+# K-Fold Cross Validation (5 folds)
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+print("\n--- K-Fold Cross Validation (cv=5) ---")
+for model, name in zip([log_model, nb_model, dt_model], ["Logistic Regression", "Naive Bayes", "Decision Tree"]):
+    scores = cross_val_score(model, X_scaled, y, cv=kf)
+    print(f"{name} Mean Accuracy: {scores.mean():.4f}, Scores: {scores}")</code></pre>
+
+
+
+    <h1>📉 Unsupervised Learning – Customer Segmentation with K-Means</h1>
+<pre><code>import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score
+
+# Load dataset
+df = pd.read_csv("Customer_Segments.csv")
+
+# Handle missing values
+imputer = SimpleImputer(strategy='most_frequent')
+df_imputed = pd.DataFrame(imputer.fit_transform(df), columns=df.columns)
+
+# Encode categorical columns
+label_encoders = {}
+for col in df_imputed.select_dtypes(include='object').columns:
+    le = LabelEncoder()
+    df_imputed[col] = le.fit_transform(df_imputed[col])
+    label_encoders[col] = le
+
+# Standardize features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(df_imputed)
+
+# Use Elbow Method to find optimal k
+wcss = []
+k_range = range(1, 11)
+for k in k_range:
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    kmeans.fit(X_scaled)
+    wcss.append(kmeans.inertia_)
+
+plt.plot(k_range, wcss, 'bo-')
+plt.xlabel('Number of Clusters (k)')
+plt.ylabel('WCSS')
+plt.title('Elbow Method for Optimal k')
+plt.grid(True)
+plt.show()
+
+# From the plot, assume optimal k = 3
+k = 3
+kmeans = KMeans(n_clusters=k, random_state=42)
+cluster_labels = kmeans.fit_predict(X_scaled)
+
+# Add cluster labels to original data
+df['Cluster'] = cluster_labels
+
+# Silhouette Score
+score = silhouette_score(X_scaled, cluster_labels)
+print(f"Silhouette Score for k={k}: {score:.4f}")
+
+# Reduce to 2D for visualization using PCA
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X_scaled)
+
+plt.scatter(X_pca[:, 0], X_pca[:, 1], c=cluster_labels, cmap='Set1')
+plt.title("Customer Segments using K-Means")
+plt.xlabel("PCA Component 1")
+plt.ylabel("PCA Component 2")
+plt.grid(True)
+plt.show()
+
+# Optional: Describe clusters
+print(df.groupby('Cluster').mean())</code></pre>
+
 </body>
 </html>
