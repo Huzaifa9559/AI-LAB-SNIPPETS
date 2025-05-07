@@ -174,24 +174,79 @@ for i, t in enumerate(tasks):
     
     solve_diagonal_path()</code></pre>
     
+    
 
-    <h2>🌊 5. Island Perimeter Detection</h2>
-    <pre><code># Original perimeter logic using simple loop
-    grid = [
-        [1, 1, 0],
-        [1, 0, 0],
-        [1, 1, 1]
-    ]
-    rows, cols = len(grid), len(grid[0])
-    perimeter = 0
-    for i in range(rows):
-        for j in range(cols):
-            if grid[i][j] == 1:
-                for dx, dy in [(-1,0),(1,0),(0,-1),(0,1)]:
-                    ni, nj = i+dx, j+dy
-                    if ni&lt;0 or nj&lt;0 or ni&gt;=rows or nj&gt;=cols or grid[ni][nj]==0:
-                        perimeter += 1
-    print(f"Island Perimeter: {perimeter}")</code></pre>
+    <h2>🌊 Island Perimeter Detection (Largest Landmass via BFS + CSP)</h2>
+    <pre><code>from ortools.sat.python import cp_model
+    from collections import deque
+    
+    # Sample grid (1 = land, 0 = water)
+    grid = [[0, 1, 1, 0], [1, 1, 0, 0], [0, 1, 1, 1], [0, 0, 0, 0]]
+    
+    rows = len(grid)
+    cols = len(grid[0])
+    
+    # Step 1: Find the largest landmass (connected 1s) using BFS
+    def get_largest_landmass(grid):
+        visited = [[False] * cols for _ in range(rows)]
+        max_component = []
+    
+        def bfs(r, c):
+            queue = deque()
+            component = []
+            queue.append((r, c))
+            visited[r][c] = True
+    
+            while queue:
+                x, y = queue.popleft()
+                component.append((x, y))
+                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    nx, ny = x + dx, y + dy
+                    if 0 &lt;= nx &lt; rows and 0 &lt;= ny &lt; cols:
+                        if not visited[nx][ny] and grid[nx][ny] == 1:
+                            visited[nx][ny] = True
+                            queue.append((nx, ny))
+            return component
+    
+        for i in range(rows):
+            for j in range(cols):
+                if grid[i][j] == 1 and not visited[i][j]:
+                    comp = bfs(i, j)
+                    if len(comp) &gt; len(max_component):
+                        max_component = comp
+        return max_component
+    
+    largest_landmass = get_largest_landmass(grid)
+    
+    # Step 2: CSP Model to compute perimeter of that landmass
+    model = cp_model.CpModel()
+    
+    # Each edge is either touching water/out-of-bounds = 1, else 0
+    edge_vars = []
+    
+    for r, c in largest_landmass:
+        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            nr, nc = r + dr, c + dc
+            is_edge = model.NewBoolVar(f"edge_{r}_{c}_{dr}_{dc}")
+            if not (0 &lt;= nr &lt; rows and 0 &lt;= nc &lt; cols) or grid[nr][nc] == 0:
+                # If adjacent to water or out of bounds, mark as edge
+                model.Add(is_edge == 1)
+            else:
+                model.Add(is_edge == 0)
+            edge_vars.append(is_edge)
+    
+    # Objective: Sum of all edge flags is the perimeter
+    perimeter = model.NewIntVar(0, len(edge_vars), "perimeter")
+    model.Add(perimeter == sum(edge_vars))
+    model.Maximize(perimeter)
+    
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+    
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        print("Perimeter of the largest landmass:", solver.Value(perimeter))
+    else:
+        print("No solution found.")</code></pre>
     
     <pre><code># Alternate version: Compute total land perimeter using CSP (no BFS)
         from ortools.sat.python import cp_model
