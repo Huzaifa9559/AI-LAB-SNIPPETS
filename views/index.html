@@ -893,5 +893,11 @@ for model, name in zip([log_model, nb_model, dt_model], ["Logistic Regression", 
 </code></pre>
 
 
+<h2>🧮 One Hot Encoding</h2>
+<pre><code>
+df = pd.get_dummies(df, columns=["embarked"], drop_first=True)
+print(df.head())
+</code></pre>
+
 </body>
 </html>
