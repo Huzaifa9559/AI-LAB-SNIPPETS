@@ -580,5 +580,215 @@ plt.show()
 # Optional: Describe clusters
 print(df.groupby('Cluster').mean())</code></pre>
 
+<h2>📌 K-Means with Elbow Method (Student Clustering)</h2>
+<pre><code>import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+import numpy as np
+
+data = {}
+
+df = pd.DataFrame(data)
+
+features = df[["GPA", "study_hours", "attendance_rate"]]
+scaler = StandardScaler()
+scaled_features = scaler.fit_transform(features)
+
+wcss = []
+for i in range(2, 7):
+    kmeans = KMeans(n_clusters=i, random_state=42)
+    kmeans.fit(scaled_features)
+    wcss.append(kmeans.inertia_)
+
+plt.plot(range(2, 7), wcss, marker="o")
+plt.title("Elbow Method to Determine Optimal K")
+plt.xlabel("Number of clusters (K)")
+plt.ylabel("WCSS")
+plt.grid(True)
+plt.show()
+
+optimal_k = 3
+kmeans = KMeans(n_clusters=optimal_k, random_state=42)
+clusters = kmeans.fit_predict(scaled_features)
+df["cluster"] = clusters
+
+plt.figure(figsize=(8, 6))
+plt.scatter(df["study_hours"], df["GPA"], c=clusters, cmap="Set1", s=100)
+plt.title("Student Clusters Based on Study Hours and GPA")
+plt.xlabel("Average Weekly Study Hours")
+plt.ylabel("GPA")
+plt.grid(True)
+plt.show()
+
+print(df[["student_id", "cluster"]])</code></pre>
+
+
+<h2>🚗 K-Means Clustering – Vehicle Data (With vs Without Scaling)</h2>
+<pre><code>import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.decomposition import PCA
+import numpy as np
+
+data = {}
+df = pd.DataFrame(data)
+
+encoder = LabelEncoder()
+df["vehicle_type_encoded"] = encoder.fit_transform(df["vehicle_type"])
+
+features_original = df[
+    ["mileage", "fuel_efficiency", "maintenance_cost", "vehicle_type_encoded"]
+]
+
+kmeans_no_scaling = KMeans(n_clusters=3, random_state=42)
+clusters_no_scaling = kmeans_no_scaling.fit_predict(features_original)
+
+pca = PCA(n_components=2)
+pca_no_scaling = pca.fit_transform(features_original)
+
+features_scaled = df[["mileage", "fuel_efficiency", "maintenance_cost"]].copy()
+scaler = StandardScaler()
+features_scaled = scaler.fit_transform(features_scaled)
+features_scaled_combined = np.hstack(
+    [features_scaled, df[["vehicle_type_encoded"]].values]
+)
+
+kmeans_with_scaling = KMeans(n_clusters=3, random_state=42)
+clusters_with_scaling = kmeans_with_scaling.fit_predict(features_scaled_combined)
+
+pca_scaled = pca.fit_transform(features_scaled_combined)
+
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+plt.scatter(
+    pca_no_scaling[:, 0],
+    pca_no_scaling[:, 1],
+    c=clusters_no_scaling,
+    cmap="Set1",
+    s=100,
+)
+plt.title("KMeans Clustering (No Scaling)")
+plt.xlabel("PCA Component 1")
+plt.ylabel("PCA Component 2")
+
+plt.subplot(1, 2, 2)
+plt.scatter(
+    pca_scaled[:, 0], pca_scaled[:, 1], c=clusters_with_scaling, cmap="Set2", s=100
+)
+plt.title("KMeans Clustering (With Scaling)")
+plt.xlabel("PCA Component 1")
+plt.ylabel("PCA Component 2")
+
+plt.tight_layout()
+plt.show()</code></pre>
+
+
+<h2>📂 Logistic Regression with K-Fold Cross Validation</h2>
+<pre><code>from sklearn.model_selection import KFold
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+import pandas as pd
+import seaborn as sns
+
+# Load dataset
+df = sns.load_dataset("titanic")
+
+# Select features and target, handling missing values
+X = df[["age", "fare"]].fillna(df[["age", "fare"]].mean())
+y = df["survived"]
+
+# Convert to DataFrame and Series to ensure .iloc[] compatibility
+X = pd.DataFrame(X)
+y = pd.Series(y)
+
+# Define K-Fold (5 splits)
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+
+# Initialize model
+model = LogisticRegression()
+
+# Store accuracy scores
+accuracy_scores = []
+
+# Perform K-Fold Cross Validation
+for train_index, test_index in kf.split(X):
+    X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+    y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+
+    # Train model
+    model.fit(X_train, y_train)
+
+    # Predict and evaluate
+    y_pred = model.predict(X_test)
+    acc = accuracy_score(y_test, y_pred)
+    accuracy_scores.append(acc)
+
+# Print results
+print("Accuracy scores across 5 folds:", accuracy_scores)
+print(f"Average Accuracy: {sum(accuracy_scores)/len(accuracy_scores):.4f}")
+</code></pre>
+
+
+<h2>📈 Linear Regression – Training, Prediction, and R² Evaluation</h2>
+<pre><code>import numpy as np
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+
+# Split the data into training and testing sets
+x_train, x_test, y_train, y_test = train_test_split(
+    x, y, test_size=0.2, random_state=42
+)
+
+# Create and train the Linear Regression model
+LR = LinearRegression()
+ModelLR = LR.fit(x_train, y_train)
+
+# Predict on the test data
+PredictionLR = ModelLR.predict(x_test)
+
+# Print the predictions
+print("Predictions:", PredictionLR)
+
+from sklearn.metrics import r2_score
+
+print("===================LR Testing Accuracy================")
+teachLR = r2_score(y_test, PredictionLR)
+testingAccLR = teachLR * 100
+print(testingAccLR)
+</code></pre>
+
+
+<h2>🔁 Leave-One-Out Cross Validation (LOOCV)</h2>
+<pre><code>from sklearn.model_selection import LeaveOneOut
+import seaborn as sns
+import pandas as pd
+
+df = sns.load_dataset("titanic")
+X = df[["age", "fare"]].fillna(df[["age", "fare"]].mean())
+y = df["survived"]
+
+X = pd.DataFrame(X)
+y = pd.Series(y)
+
+# Initialize LOOCV
+loo = LeaveOneOut()
+
+# Store accuracy scores
+loo_scores = []
+
+# Perform LOOCV
+for train_index, test_index in loo.split(X):
+    X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+    y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+    
+    # TODO: Train and evaluate a model here
+    # e.g., fit LogisticRegression, make prediction, append accuracy
+</code></pre>
+
+
 </body>
 </html>
